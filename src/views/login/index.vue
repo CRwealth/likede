@@ -2,13 +2,11 @@
   <div class="login-container">
     <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" auto-complete="on" label-position="left">
 
-      <div class="title-container">
-        <h3 class="title">Login Form</h3>
-      </div>
+      <div class="title-container" />
 
       <el-form-item prop="username">
         <span class="svg-container">
-          <svg-icon icon-class="user" />
+          <i slot="suffix" class="el-icon-mobile-phone" />
         </span>
         <el-input
           ref="username"
@@ -19,11 +17,12 @@
           tabindex="1"
           auto-complete="on"
         />
+
       </el-form-item>
 
       <el-form-item prop="password">
         <span class="svg-container">
-          <svg-icon icon-class="password" />
+          <i slot="prefix" class="el-icon-lock" />
         </span>
         <el-input
           :key="passwordType"
@@ -39,24 +38,37 @@
         <span class="show-pwd" @click="showPwd">
           <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
         </span>
+
       </el-form-item>
-
-      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">Login</el-button>
-
-      <div class="tips">
-        <span style="margin-right:20px;">username: admin</span>
-        <span> password: any</span>
-      </div>
+      <el-form-item prop="username">
+        <span class="svg-container">
+          <i slot="suffix" class="el-icon-mouse" />
+        </span>
+        <el-input
+          ref="username"
+          v-model="verificationCode"
+          placeholder="请输入验证码"
+          type="text"
+          tabindex="3"
+        />
+        <div class="get-code" @click="refreshCode()">
+          <s-identify :identify-code="identifyCode" />
+        </div>
+      </el-form-item>
+      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">登陆</el-button>
 
     </el-form>
+
   </div>
 </template>
 
 <script>
+import SIdentify from './components/SIdentify.vue'
 import { validUsername } from '@/utils/validate'
 
 export default {
   name: 'Login',
+  components: { SIdentify },
   data() {
     const validateUsername = (rule, value, callback) => {
       if (!validUsername(value)) {
@@ -73,6 +85,9 @@ export default {
       }
     }
     return {
+      identifyCode: '', // 密码登录图形验证码
+      identifyCodes: '0123456789abcdwerwshdjeJKDHRJHKOOPLMKQ', // 绘制的随机数
+      verificationCode: '',
       loginForm: {
         username: 'admin',
         password: '111111'
@@ -94,7 +109,23 @@ export default {
       immediate: true
     }
   },
+  created() { this.refreshCode() },
   methods: {
+    refreshCode() {
+      this.identifyCode = ''
+      this.makeCode(this.identifyCodes, 4)
+    },
+    randomNum(min, max) {
+      max = max + 1
+      return Math.floor(Math.random() * (max - min) + min)
+    },
+    // 随机生成验证码字符串
+    makeCode(data, len) {
+      for (let i = 0; i < len; i++) {
+        this.identifyCode += data[this.randomNum(0, data.length - 1)]
+      }
+    },
+
     showPwd() {
       if (this.passwordType === 'password') {
         this.passwordType = ''
@@ -131,16 +162,30 @@ export default {
 
 $bg:#283443;
 $light_gray:#fff;
-$cursor: #fff;
+$cursor:#ccc;
 
 @supports (-webkit-mask: none) and (not (cater-color: $cursor)) {
   .login-container .el-input input {
     color: $cursor;
+    color: rgb(136, 136, 136) !important
   }
 }
+.get-code{
+position:absolute;
+right: 30px;
+left: 330px;
+top: 5px;
 
+}
+.el-form-item__content{
+  background-color:#fff;
+  font-size: 20px;
+}
 /* reset element-ui css */
 .login-container {
+    background-image: url('~@/assets/bg/logobg.png'); // 设置背景图片
+    background-position: center; // 将图片位置设置为充满整个屏幕
+
   .el-input {
     display: inline-block;
     height: 47px;
@@ -168,6 +213,13 @@ $cursor: #fff;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     color: #454545;
+    margin-top: -30px;
+    margin-bottom:50px
+  }
+  .el-button{
+    margin-top:-32px;
+    line-height:2;
+      background: -webkit-linear-gradient(left,#7380e8,#4b62dd);
   }
 }
 </style>
@@ -184,12 +236,14 @@ $light_gray:#eee;
   overflow: hidden;
 
   .login-form {
+    background-color: #fff;
     position: relative;
     width: 520px;
     max-width: 100%;
-    padding: 160px 35px 0;
-    margin: 0 auto;
-    overflow: hidden;
+    padding: 0 31px 0;
+    margin: 100px auto;
+    height: 397px;
+    // overflow: hidden;
   }
 
   .tips {
@@ -214,14 +268,14 @@ $light_gray:#eee;
 
   .title-container {
     position: relative;
+    top:-52px ;
+    left:180px;
+    background-image: url('~@/assets/bg/lkd_logo.png'); // 设置logo图片
+    background-size: 100% 100%;
+    border-radius: 100%;
+    width:100px;
+    height: 100px;
 
-    .title {
-      font-size: 26px;
-      color: $light_gray;
-      margin: 0px auto 40px auto;
-      text-align: center;
-      font-weight: bold;
-    }
   }
 
   .show-pwd {
