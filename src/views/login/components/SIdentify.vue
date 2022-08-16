@@ -53,11 +53,11 @@ export default {
     },
     contentWidth: {
       type: Number,
-      default: 120
+      default: 139
     },
     contentHeight: {
       type: Number,
-      default: 40
+      default: 50
     }
   },
   watch: {
@@ -81,7 +81,7 @@ export default {
       return 'rgb(' + r + ',' + g + ',' + b + ')'
     },
     transparent() {
-      return 'rgb(255,255,255)'
+      return '#ccc'
     },
     drawPic() {
       const canvas = document.getElementById('s-canvas')
@@ -154,3 +154,4 @@ export default {
   }
 }
 </script>
+

@@ -1,24 +1,19 @@
 import request from '@/utils/request'
 
-export function login(data) {
-  return request({
-    url: '/vue-admin-template/user/login',
-    method: 'post',
-    data
-  })
+// const num = Math.random() * 100
+export function getcode(num) {
+  const url = `/api/user-service/user/imageCode/${num}`
+  return url
 }
 
-export function getInfo(token) {
+// 登陆页面
+export function loginApi(data) {
   return request({
-    url: '/vue-admin-template/user/info',
-    method: 'get',
-    params: { token }
-  })
-}
-
-export function logout() {
-  return request({
-    url: '/vue-admin-template/user/logout',
-    method: 'post'
+    url: 'user-service/user/login',
+    method: 'POST',
+    data: {
+      ...data,
+      loginType: 0
+    }
   })
 }

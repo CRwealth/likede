@@ -1,156 +1,125 @@
 <template>
   <div class="login-container">
-    <el-form ref="loginForm" :model="loginForm" :rules="loginRules" class="login-form" auto-complete="on" label-position="left">
-
-      <div class="title-container" />
-
-      <el-form-item prop="username">
-        <span class="svg-container">
-          <i slot="suffix" class="el-icon-mobile-phone" />
-        </span>
-        <el-input
-          ref="username"
-          v-model="loginForm.username"
-          placeholder="Username"
-          name="username"
-          type="text"
-          tabindex="1"
-          auto-complete="on"
-        />
-
+    <el-form ref="loginForm" :model="loginForm" :rules="formRules" class="login-form" auto-complete="on" label-position="left">
+      <!-- logo -->
+      <div class="title-container">
+        <img src="@/assets/bg/lkd_logo.png" alt="">
+      </div>
+      <!-- /logo -->
+      <!-- 账号框 -->
+      <el-form-item prop="loginName">
+        <span class="svg-container el-icon-mobile" />
+        <el-input v-model="loginForm.loginName" placeholder="请输入账号" />
       </el-form-item>
 
+      <!-- 密码框 -->
       <el-form-item prop="password">
+        <span class="svg-container el-icon-lock" />
+        <el-input ref="password" v-model="loginForm.password" :type="passwordType" placeholder="请输入密码" />
         <span class="svg-container">
-          <i slot="prefix" class="el-icon-lock" />
+          <svg-icon :icon-class="`${passwordType==='password' ? 'eye' : 'eye-open'}`" @click="showPwd" />
         </span>
-        <el-input
-          :key="passwordType"
-          ref="password"
-          v-model="loginForm.password"
-          :type="passwordType"
-          placeholder="Password"
-          name="password"
-          tabindex="2"
-          auto-complete="on"
-          @keyup.enter.native="handleLogin"
-        />
-        <span class="show-pwd" @click="showPwd">
-          <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
-        </span>
+      </el-form-item>
 
+      <!-- 验证码 -->
+      <el-form-item prop="code">
+        <el-row type="flex">
+          <el-col :span="2">
+            <span class="svg-container">
+              <svg-icon icon-class="shield" class="code" />
+            </span>
+          </el-col>
+          <el-col :span="15">
+            <el-input v-model="loginForm.code" style="height:'50px'" placeholder="请输入验证码" />
+          </el-col>
+          <el-col :span="7">
+            <img :src="src" alt="" @click="changeSrc">
+          </el-col>
+        </el-row>
       </el-form-item>
-      <el-form-item prop="username">
-        <span class="svg-container">
-          <i slot="suffix" class="el-icon-mouse" />
-        </span>
-        <el-input
-          ref="username"
-          v-model="verificationCode"
-          placeholder="请输入验证码"
-          type="text"
-          tabindex="3"
-        />
-        <div class="get-code" @click="refreshCode()">
-          <s-identify :identify-code="identifyCode" />
-        </div>
-      </el-form-item>
-      <el-button :loading="loading" type="primary" style="width:100%;margin-bottom:30px;" @click.native.prevent="handleLogin">登陆</el-button>
+
+      <!-- 提交按钮 -->
+      <el-button :loading="loading" class="btn" style="width:100%;margin-bottom:30px;" @click="loginBtn">登录</el-button>
+
+      <!-- <div class="tips">
+        <span style="margin-right:20px;">username: admin</span>
+        <span> password: any</span>
+      </div> -->
 
     </el-form>
-
   </div>
 </template>
 
 <script>
-import SIdentify from './components/SIdentify.vue'
 import { validUsername } from '@/utils/validate'
-
+import { getcode } from '@/api/user'
 export default {
   name: 'Login',
-  components: { SIdentify },
   data() {
     const validateUsername = (rule, value, callback) => {
-      if (!validUsername(value)) {
-        callback(new Error('Please enter the correct user name'))
-      } else {
+      if (validUsername(value)) {
         callback()
-      }
-    }
-    const validatePassword = (rule, value, callback) => {
-      if (value.length < 6) {
-        callback(new Error('The password can not be less than 6 digits'))
       } else {
-        callback()
+        callback(new Error('账号格式不正确'))
       }
     }
     return {
-      identifyCode: '', // 密码登录图形验证码
-      identifyCodes: '0123456789abcdwerwshdjeJKDHRJHKOOPLMKQ', // 绘制的随机数
-      verificationCode: '',
+      getcode,
       loginForm: {
-        username: 'admin',
-        password: '111111'
+        loginName: 'admin',
+        password: 'admin',
+        code: '',
+        clientToken: ''
       },
-      loginRules: {
-        username: [{ required: true, trigger: 'blur', validator: validateUsername }],
-        password: [{ required: true, trigger: 'blur', validator: validatePassword }]
-      },
-      loading: false,
+      src: '',
       passwordType: 'password',
-      redirect: undefined
+      loading: false,
+      formRules: {
+        loginName: [
+          { required: true, message: '请输入账号', trigger: 'blur' },
+          { validator: validateUsername, trigger: 'blur' }
+        ],
+        password: [
+          { required: true, message: '请输入密码', trigger: 'blur' },
+          { min: 5, max: 16, message: '密码的长度在5-16位之间 ', trigger: 'blur' }
+        ],
+        code: [{ required: true, message: '请输入验证码', trigger: 'blur' }]
+      }
     }
   },
-  watch: {
-    $route: {
-      handler: function(route) {
-        this.redirect = route.query && route.query.redirect
-      },
-      immediate: true
-    }
+  // 刚进入页面就要先获得验证码
+  mounted() {
+    this.changeSrc()
   },
-  created() { this.refreshCode() },
   methods: {
-    refreshCode() {
-      this.identifyCode = ''
-      this.makeCode(this.identifyCodes, 4)
-    },
-    randomNum(min, max) {
-      max = max + 1
-      return Math.floor(Math.random() * (max - min) + min)
-    },
-    // 随机生成验证码字符串
-    makeCode(data, len) {
-      for (let i = 0; i < len; i++) {
-        this.identifyCode += data[this.randomNum(0, data.length - 1)]
-      }
-    },
-
+    // 修改密码框的type
     showPwd() {
-      if (this.passwordType === 'password') {
-        this.passwordType = ''
-      } else {
-        this.passwordType = 'password'
-      }
+      this.passwordType === 'password' ? this.passwordType = '' : this.passwordType = 'password'
       this.$nextTick(() => {
         this.$refs.password.focus()
       })
     },
-    handleLogin() {
-      this.$refs.loginForm.validate(valid => {
-        if (valid) {
-          this.loading = true
-          this.$store.dispatch('user/login', this.loginForm).then(() => {
-            this.$router.push({ path: this.redirect || '/' })
-            this.loading = false
-          }).catch(() => {
-            this.loading = false
-          })
-        } else {
-          console.log('error submit!!')
-          return false
-        }
-      })
+    // 登录
+    async loginBtn() {
+      try {
+        await this.$refs.loginForm.validate()
+        this.loading = true
+        console.log(this.$store)
+        // 在vuex中调用接口保存token值
+        await this.$store.dispatch('user/login', this.loginForm)
+        this.$router.push('/')
+      } catch (e) {
+        console.log(e)
+      } finally {
+        this.loading = false
+      }
+    },
+    // 点击刷新验证码
+    changeSrc() {
+      const num = Math.random() * 100
+      this.src = this.getcode(num)
+      // console.log(this.src)
+      this.loginForm.clientToken = num
     }
   }
 }
@@ -161,31 +130,17 @@ export default {
 /* Detail see https://github.com/PanJiaChen/vue-element-admin/pull/927 */
 
 $bg:#283443;
-$light_gray:#fff;
-$cursor:#ccc;
+$light_gray:#999;
+$cursor: #999;
 
 @supports (-webkit-mask: none) and (not (cater-color: $cursor)) {
   .login-container .el-input input {
     color: $cursor;
-    color: rgb(136, 136, 136) !important
   }
 }
-.get-code{
-position:absolute;
-right: 30px;
-left: 330px;
-top: 5px;
 
-}
-.el-form-item__content{
-  background-color:#fff;
-  font-size: 20px;
-}
 /* reset element-ui css */
 .login-container {
-    background-image: url('~@/assets/bg/logobg.png'); // 设置背景图片
-    background-position: center; // 将图片位置设置为充满整个屏幕
-
   .el-input {
     display: inline-block;
     height: 47px;
@@ -213,13 +168,12 @@ top: 5px;
     background: rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     color: #454545;
-    margin-top: -30px;
-    margin-bottom:50px
   }
-  .el-button{
-    margin-top:-32px;
-    line-height:2;
-      background: -webkit-linear-gradient(left,#7380e8,#4b62dd);
+   .el-form-item {
+    // input框样式
+     background-color:#fff;
+     font-size: 20px;
+     border: 1px solid #e2e2e2;
   }
 }
 </style>
@@ -228,22 +182,28 @@ top: 5px;
 $bg:#2d3a4b;
 $dark_gray:#889aa4;
 $light_gray:#eee;
+$bgi:url('~@/assets/bg/logobg.png');
 
 .login-container {
   min-height: 100%;
   width: 100%;
   background-color: $bg;
   overflow: hidden;
+  background-image: $bgi;
+  background-size: cover;
 
   .login-form {
-    background-color: #fff;
     position: relative;
     width: 520px;
+    height: 388px;
     max-width: 100%;
-    padding: 0 31px 0;
-    margin: 100px auto;
-    height: 397px;
+    padding: 160px 35px 0;
+    margin: 194px auto;
     // overflow: hidden;
+    background: #fff;
+    padding: 76px 35px 0;
+    box-shadow: 0 3px 70px 0 rgb(30 111 72 / 35%);
+    border-radius: 10px;
   }
 
   .tips {
@@ -267,15 +227,24 @@ $light_gray:#eee;
   }
 
   .title-container {
-    position: relative;
-    top:-52px ;
-    left:180px;
-    background-image: url('~@/assets/bg/lkd_logo.png'); // 设置logo图片
-    background-size: 100% 100%;
-    border-radius: 100%;
-    width:100px;
-    height: 100px;
+    position: absolute;
+    width: 96px;
+    height: 96px;
+    top: -46px;
+    left: 50%;
+    margin-left: -48px;
+    img {
+      width: 100%;
+    }
 
+    // .title {
+    //   // font-size: 26px;
+    //   // color: $light_gray;
+    //   // margin: 0px auto 40px auto;
+    //   // text-align: center;
+    //   // font-weight: bold;
+
+    // }
   }
 
   .show-pwd {
@@ -286,6 +255,25 @@ $light_gray:#eee;
     color: $dark_gray;
     cursor: pointer;
     user-select: none;
+  }
+  // 提交按钮
+  .btn {
+    &.el-button {
+    width: 100%;
+    height: 52px;
+    background: linear-gradient(262deg,#2e50e1,#6878f0) !important;
+    opacity: .91;
+    border-radius: 8px;
+    color: #fff;
+    text-shadow: 0 7px 22px #cfcfcf;
+  }
+  }
+  .code {
+    font-size: 20px;
+    color: #999 ;
+  }
+  .el-col-7{
+    height: 50px;
   }
 }
 </style>
